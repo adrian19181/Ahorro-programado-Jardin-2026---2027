@@ -589,11 +589,11 @@ if wb is not None:
         avg_daily_vals.append(avg_val)
 
     # 4.3 CREACIÓN DE PESTAÑAS Y GRÁFICOS
-    tab_int, tab_saldo, tab_avg, tab_comp = st.tabs([
+    tab_int, tab_saldo, tab_avg, tab_cum = st.tabs([
         "🔴 Interés Ganado Mensual", 
         "🟦 Saldo Fin de Mes", 
         "🟢 Interés Diario Promedio",
-        "📊 Capital vs. Interés Acumulado"
+        "📈 Interés Acumulado Creciente"
     ])
 
     # PESTAÑA 1: INTERÉS GANADO MENSUAL
@@ -698,47 +698,36 @@ if wb is not None:
                 config={'staticPlot': True, 'displayModeBar': False}
             )
 
-    # PESTAÑA 4: CAPITAL VS. INTERÉS ACUMULADO (NUEVO GRÁFICO)
-    with tab_comp:
+    # PESTAÑA 4: INTERÉS ACUMULADO CRECIENTE (SOLUCIÓN DE ESCALA)
+    with tab_cum:
         if chart_saldos and chart_intereses:
             cum_int = np.cumsum(chart_intereses).tolist()
-            cum_cap = [max(0.0, s - i) for s, i in zip(chart_saldos, cum_int)]
+            pct_roi = [(i / s) * 100 for i, s in zip(cum_int, chart_saldos)]
 
-            fig_comp = go.Figure()
-            fig_comp.add_trace(go.Bar(
-                name='Capital Aportado',
-                x=cum_cap,
-                y=chart_dates,
-                orientation='h',
-                marker_color='#3B82F6',
-                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in cum_cap],
-                textposition='inside',
-                textfont=dict(size=10, color='#FFFFFF'),
-                hoverinfo='name+x'
-            ))
-            fig_comp.add_trace(go.Bar(
-                name='Interés Acumulado',
+            max_cum = max(cum_int) if cum_int else 1.0
+            pos_cum = ['outside' if v < max_cum * 0.35 else 'inside' for v in cum_int]
+
+            labels_cum = [
+                f"${v:,.2f} ({p:.1f}%)".replace(".", "X").replace(",", ".").replace("X", ",")
+                for v, p in zip(cum_int, pct_roi)
+            ]
+
+            fig_cum = go.Figure()
+            fig_cum.add_trace(go.Bar(
                 x=cum_int,
                 y=chart_dates,
                 orientation='h',
-                marker_color='#22C55E',
-                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in cum_int],
-                textposition='inside',
-                textfont=dict(size=10, color='#FFFFFF'),
-                hoverinfo='name+x'
+                marker_color='#10B981', # Verde Esmeralda
+                text=labels_cum,
+                textposition=pos_cum,
+                textfont=dict(size=11),
+                insidetextfont=dict(color='#FFFFFF'),
+                outsidetextfont=dict(color='#FAFAFA'),
+                hoverinfo='none'
             ))
-            fig_comp.update_layout(
-                barmode='stack',
+            fig_cum.update_layout(
                 template="plotly_dark",
-                legend=dict(
-                    orientation="h", 
-                    yanchor="bottom", 
-                    y=1.02, 
-                    xanchor="right", 
-                    x=1, 
-                    font=dict(size=11, color="#CBD5E1")
-                ),
-                margin=dict(l=75, r=20, t=30, b=30),
+                margin=dict(l=75, r=85, t=10, b=30),
                 height=max(380, len(chart_dates) * 32),
                 xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
                 yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
@@ -746,7 +735,7 @@ if wb is not None:
                 plot_bgcolor="rgba(0,0,0,0)"
             )
             st.plotly_chart(
-                fig_comp, 
+                fig_cum, 
                 use_container_width=True, 
                 config={'staticPlot': True, 'displayModeBar': False}
             )
