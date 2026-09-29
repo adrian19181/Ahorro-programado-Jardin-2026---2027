@@ -5,7 +5,6 @@ import openpyxl
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 # ==============================================================================
 # AUTORUNNER: FUNCIONA TANTO LOCALMENTE COMO EN STREAMLIT CLOUD
@@ -429,17 +428,19 @@ if wb is not None:
         inc_d_str = f"{m['inc_int_d']:.2f}".replace(".", ",") if m['inc_int_d'] > 0 else ""
         int_m_str = f"<b>{m['int_m']:,.2f}</b>".replace(".", "X").replace(",", ".").replace("X", ",") if m['int_m'] is not None else ""
 
-        rows_html.append(f"""<tr style="background-color: {m['bg_color']};">
-<td><b>{dt_str}</b></td>
-<td>{dep_m_str}</td>
-<td>{dep_p_str}</td>
-<td style="font-weight: 600;">{saldo_str}</td>
-<td>{int_d_str}</td>
-<td>{inc_d_str}</td>
-<td>{int_m_str}</td>
-</tr>""")
+        rows_html.append(
+            f'<tr style="background-color: {m["bg_color"]};">'
+            f'<td><b>{dt_str}</b></td>'
+            f'<td>{dep_m_str}</td>'
+            f'<td>{dep_p_str}</td>'
+            f'<td style="font-weight: 600;">{saldo_str}</td>'
+            f'<td>{int_d_str}</td>'
+            f'<td>{inc_d_str}</td>'
+            f'<td>{int_m_str}</td>'
+            f'</tr>'
+        )
 
-    tabla_movs_body = "\n".join(rows_html)
+    tabla_movs_body = "".join(rows_html)
 
     html_movs_completo = f"""<style>
 .tbl-scroll-wrapper {{
@@ -507,7 +508,7 @@ if wb is not None:
     st.divider()
 
     # ==============================================================================
-    # 4. SECCIÓN DE GRÁFICOS DINÁMICOS
+    # 4. SECCIÓN DE GRÁFICOS HORIZONTALES ESTÁTICOS 100% ADAPTADOS A MÓVIL
     # ==============================================================================
     st.subheader("📊 Evolución de Saldo e Intereses Mensuales")
 
@@ -534,47 +535,60 @@ if wb is not None:
         r_chart += 1
 
     if chart_dates:
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        tab_int, tab_saldo = st.tabs(["🔴 Interés Ganado Mensual", "🟦 Saldo Fin de Mes"])
 
-        # Barras: Interés Ganado Cada Mes (Eje Derecho - Secundario)
-        fig.add_trace(
-            go.Bar(
-                x=chart_dates,
-                y=chart_intereses,
-                name="Interés ganado cada mes",
-                marker_color="#DC2626",
+        # PESTAÑA 1: INTERÉS GANADO MENSUAL (BARRAS HORIZONTALES)
+        with tab_int:
+            fig_int = go.Figure()
+            fig_int.add_trace(go.Bar(
+                x=chart_intereses,
+                y=chart_dates,
+                orientation='h',
+                marker_color='#EF4444',
                 text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_intereses],
-                textposition="outside",
-                textfont=dict(size=11, color="#DC2626"),
-                hovertemplate="<b>%{x}</b><br>Interés Ganado: $%{y:,.2f}<extra></extra>"
-            ),
-            secondary_y=True,
-        )
+                textposition='outside',
+                textfont=dict(size=11, color='#EF4444'),
+                hoverinfo='none'
+            ))
+            fig_int.update_layout(
+                template="plotly_dark",
+                margin=dict(l=75, r=55, t=10, b=30),
+                height=max(380, len(chart_dates) * 32),
+                xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
+                yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)"
+            )
+            st.plotly_chart(
+                fig_int, 
+                use_container_width=True, 
+                config={'staticPlot': True, 'displayModeBar': False}
+            )
 
-        # Línea: Saldo Fin de Mes (Eje Izquierdo - Principal)
-        fig.add_trace(
-            go.Scatter(
-                x=chart_dates,
-                y=chart_saldos,
-                name="Saldo Fin de Mes",
-                mode="lines+markers",
-                line=dict(color="#1D4ED8", width=3),
-                marker=dict(size=6, color="#1D4ED8"),
-                hovertemplate="<b>%{x}</b><br>Saldo Fin de Mes: $%{y:,.2f}<extra></extra>"
-            ),
-            secondary_y=False,
-        )
-
-        fig.update_layout(
-            template="plotly_white",
-            hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1),
-            margin=dict(l=20, r=20, t=40, b=40),
-            height=480
-        )
-
-        fig.update_xaxes(title_text="<b>Fecha de Cobro de Intereses</b>", tickangle=-45)
-        fig.update_yaxes(title_text="<b>Saldo Fin de Mes ($)</b>", secondary_y=False, showgrid=True)
-        fig.update_yaxes(title_text="<b>Interés Ganado Cada Mes ($)</b>", secondary_y=True, showgrid=False)
-
-        st.plotly_chart(fig, use_container_width=True)
+        # PESTAÑA 2: SALDO FIN DE MES (BARRAS HORIZONTALES)
+        with tab_saldo:
+            fig_sal = go.Figure()
+            fig_sal.add_trace(go.Bar(
+                x=chart_saldos,
+                y=chart_dates,
+                orientation='h',
+                marker_color='#3B82F6',
+                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_saldos],
+                textposition='inside',
+                textfont=dict(size=10, color='#FFFFFF'),
+                hoverinfo='none'
+            ))
+            fig_sal.update_layout(
+                template="plotly_dark",
+                margin=dict(l=75, r=20, t=10, b=30),
+                height=max(380, len(chart_dates) * 32),
+                xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
+                yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)"
+            )
+            st.plotly_chart(
+                fig_sal, 
+                use_container_width=True, 
+                config={'staticPlot': True, 'displayModeBar': False}
+            )
