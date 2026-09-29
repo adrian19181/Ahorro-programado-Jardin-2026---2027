@@ -4,9 +4,11 @@ import requests
 import openpyxl
 import pandas as pd
 import streamlit as st
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # ==============================================================================
-# AUTORUNNER: FUNCIONA TANTO LOCALMENTE (DOBLE CLIC) COMO EN STREAMLIT CLOUD
+# AUTORUNNER: FUNCIONA TANTO LOCALMENTE COMO EN STREAMLIT CLOUD
 # ==============================================================================
 if __name__ == "__main__":
     if not st.runtime.exists():
@@ -77,7 +79,7 @@ with col_title:
     st.caption("Sincronizado en tiempo real desde Google Drive")
 
 with col_btn:
-    if st.button("🔄 Recargar Excel", use_container_width=True):
+    if st.button("🔄 Recargar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
@@ -206,31 +208,26 @@ if wb is not None:
     # ==============================================================================
     # 2. SECCIONES DE KPIS: RESULTADOS Y RENDIMIENTOS
     # ==============================================================================
-    # Lectura directa desde Excel
     d2 = sheet["D2"].value   # Total Interés Ganados
     d3 = sheet["D3"].value   # Total Depósitos Mensuales
     d4 = sheet["D4"].value   # Total Depósitos Personales
     d5 = sheet["D5"].value   # Total Depositado sin intereses
-    d6 = sheet["D6"].value   # Total Ganado con intereses
+    d6 = sheet["D6"].value   # Total Ganado Incluido Intereses
 
-    b7 = sheet["B7"].value   # TIR (Tasa Interna de Retorno) celda B7
+    b7 = sheet["B7"].value   # TIR (Tasa Interna de Retorno)
     d7 = sheet["D7"].value   # ROI RENTABILIDAD ACUMULADA
-    d10 = sheet["D10"].value # Rentabilidad total bruta
     d16 = sheet["D16"].value # Saldo Fin mes Promedio Ponderado
     d19 = sheet["D19"].value # Aportes Personales Promedio
     b19 = sheet["B19"].value # Interés Diario Promedio
 
-    # CÁLCULOS DE KPIS SOLICITADOS
-    # 1. TEA (Tasa Efectiva Anual en función de TNA F1/H1): (1 + TNA/12)^12 - 1
+    # CÁLCULOS DE KPIS
     tna_dec = tna_num if tna_num <= 1 else tna_num / 100.0
     tea_calc = ((1.0 + (tna_dec / 12.0)) ** 12.0) - 1.0
 
-    # 2. Ratio de Ganancia (% de intereses sobre el saldo total): D2 / D6
     d2_num = float(d2) if isinstance(d2, (int, float)) else 0.0
     d6_num = float(d6) if isinstance(d6, (int, float)) else 0.0
     ratio_ganancia_calc = (d2_num / d6_num) if d6_num > 0 else 0.0
 
-    # Estilos CSS para tarjetas KPI responsivas
     css_kpis = """<style>
 .kpi-grid {
     display: flex;
@@ -303,12 +300,8 @@ if wb is not None:
 <div class="kpi-value">{fmt_moneda(d5)}</div>
 </div>
 <div class="kpi-card kpi-card-green">
-<div class="kpi-label">Total Ganado (con Int.)</div>
+<div class="kpi-label">Total Ganado Incluido Intereses</div>
 <div class="kpi-value">{fmt_moneda(d6)}</div>
-</div>
-<div class="kpi-card kpi-card-purple">
-<div class="kpi-label">Ratio de Ganancia</div>
-<div class="kpi-value">{fmt_porcentaje(ratio_ganancia_calc)}</div>
 </div>
 </div>"""
 
@@ -330,9 +323,9 @@ if wb is not None:
 <div class="kpi-label">ROI Rentabilidad Acum.</div>
 <div class="kpi-value">{fmt_porcentaje(d7)}</div>
 </div>
-<div class="kpi-card kpi-card-green">
-<div class="kpi-label">Rentabilidad Total Bruta</div>
-<div class="kpi-value">{fmt_porcentaje(d10)}</div>
+<div class="kpi-card kpi-card-purple">
+<div class="kpi-label">Ratio de Ganancia</div>
+<div class="kpi-value">{fmt_porcentaje(ratio_ganancia_calc)}</div>
 </div>
 <div class="kpi-card kpi-card-blue">
 <div class="kpi-label">Saldo Fin Mes Prom. Pond.</div>
@@ -510,3 +503,78 @@ if wb is not None:
 </div>"""
 
     st.markdown(html_movs_completo, unsafe_allow_html=True)
+
+    st.divider()
+
+    # ==============================================================================
+    # 4. SECCIÓN DE GRÁFICOS DINÁMICOS
+    # ==============================================================================
+    st.subheader("📊 Evolución de Saldo e Intereses Mensuales")
+
+    chart_dates = []
+    chart_saldos = []
+    chart_intereses = []
+
+    r_chart = 2 # Fila inicio en tabla resumen mensual (AC2:AG14)
+    while True:
+        f_cobro = sheet.cell(row=r_chart, column=29).value # Col AC (Fecha Cobro Intereses)
+        saldo_fin = sheet.cell(row=r_chart, column=30).value # Col AD (Saldo Fin mes)
+        int_mes = sheet.cell(row=r_chart, column=33).value # Col AG (Interés Mensual)
+
+        if f_cobro is None or str(f_cobro).strip() == "":
+            break
+
+        dt_str = f_cobro.strftime('%d/%m/%Y') if hasattr(f_cobro, 'strftime') else str(f_cobro)
+        saldo_val = float(saldo_fin) if isinstance(saldo_fin, (int, float)) else 0.0
+        int_mes_val = float(int_mes) if isinstance(int_mes, (int, float)) else 0.0
+
+        chart_dates.append(dt_str)
+        chart_saldos.append(saldo_val)
+        chart_intereses.append(int_mes_val)
+        r_chart += 1
+
+    if chart_dates:
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+        # Barras: Interés Ganado Cada Mes (Eje Derecho - Secundario)
+        fig.add_trace(
+            go.Bar(
+                x=chart_dates,
+                y=chart_intereses,
+                name="Interés ganado cada mes",
+                marker_color="#DC2626",
+                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_intereses],
+                textposition="outside",
+                textfont=dict(size=11, color="#DC2626"),
+                hovertemplate="<b>%{x}</b><br>Interés Ganado: $%{y:,.2f}<extra></extra>"
+            ),
+            secondary_y=True,
+        )
+
+        # Línea: Saldo Fin de Mes (Eje Izquierdo - Principal)
+        fig.add_trace(
+            go.Scatter(
+                x=chart_dates,
+                y=chart_saldos,
+                name="Saldo Fin de Mes",
+                mode="lines+markers",
+                line=dict(color="#1D4ED8", width=3),
+                marker=dict(size=6, color="#1D4ED8"),
+                hovertemplate="<b>%{x}</b><br>Saldo Fin de Mes: $%{y:,.2f}<extra></extra>"
+            ),
+            secondary_y=False,
+        )
+
+        fig.update_layout(
+            template="plotly_white",
+            hovermode="x unified",
+            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="right", x=1),
+            margin=dict(l=20, r=20, t=40, b=40),
+            height=480
+        )
+
+        fig.update_xaxes(title_text="<b>Fecha de Cobro de Intereses</b>", tickangle=-45)
+        fig.update_yaxes(title_text="<b>Saldo Fin de Mes ($)</b>", secondary_y=False, showgrid=True)
+        fig.update_yaxes(title_text="<b>Interés Ganado Cada Mes ($)</b>", secondary_y=True, showgrid=False)
+
+        st.plotly_chart(fig, use_container_width=True)
