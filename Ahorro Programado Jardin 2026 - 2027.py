@@ -508,10 +508,11 @@ if wb is not None:
     st.divider()
 
     # ==============================================================================
-    # 4. SECCIÓN DE GRÁFICOS HORIZONTALES ESTÁTICOS 100% ADAPTADOS A MÓVIL
+    # 4. SECCIÓN DE GRÁFICOS HORIZONTALES INTELIGENTES 100% ADAPTADOS A MÓVIL
     # ==============================================================================
     st.subheader("📊 Evolución de Saldo e Intereses Mensuales")
 
+    # 4.1 LECTURA DE RESUMEN MENSUAL (AC:AG)
     chart_dates = []
     chart_saldos = []
     chart_intereses = []
@@ -534,61 +535,149 @@ if wb is not None:
         chart_intereses.append(int_mes_val)
         r_chart += 1
 
-    if chart_dates:
-        tab_int, tab_saldo = st.tabs(["🔴 Interés Ganado Mensual", "🟦 Saldo Fin de Mes"])
+    # 4.2 CÁLCULO DE INTERÉS DIARIO PROMEDIO POR MES DESDE COLUMNA A Y COLUMNA R
+    daily_int_by_month = {}
+    for r_d in range(2, sheet.max_row + 1):
+        f_val = sheet.cell(row=r_d, column=1).value  # Col A (Fechas)
+        r_val = sheet.cell(row=r_d, column=18).value # Col R (Interés Diario)
 
-        # PESTAÑA 1: INTERÉS GANADO MENSUAL (BARRAS HORIZONTALES)
+        if f_val is None or str(f_val).strip() == "":
+            continue
+
+        dt = None
+        if hasattr(f_val, 'year'):
+            dt = f_val
+        else:
+            try:
+                dt = pd.to_datetime(f_val)
+            except:
+                continue
+
+        try:
+            num_val = float(r_val) if r_val is not None else 0.0
+        except (ValueError, TypeError):
+            continue
+
+        if num_val > 0:
+            m_key = (dt.year, dt.month)
+            if m_key not in daily_int_by_month:
+                daily_int_by_month[m_key] = []
+            daily_int_by_month[m_key].append(num_val)
+
+    avg_daily_dates = []
+    avg_daily_vals = []
+
+    for (year, month), vals in sorted(daily_int_by_month.items()):
+        start_month_str = f"01/{month:02d}/{year}"
+        avg_val = sum(vals) / len(vals) if vals else 0.0
+        avg_daily_dates.append(start_month_str)
+        avg_daily_vals.append(avg_val)
+
+    if chart_dates or avg_daily_dates:
+        tab_int, tab_saldo, tab_avg = st.tabs([
+            "🔴 Interés Ganado Mensual", 
+            "🟦 Saldo Fin de Mes", 
+            "🟢 Interés Diario Promedio"
+        ])
+
+        # PESTAÑA 1: INTERÉS GANADO MENSUAL (BARRAS HORIZONTALES INTELIGENTES)
         with tab_int:
-            fig_int = go.Figure()
-            fig_int.add_trace(go.Bar(
-                x=chart_intereses,
-                y=chart_dates,
-                orientation='h',
-                marker_color='#EF4444',
-                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_intereses],
-                textposition='outside',
-                textfont=dict(size=11, color='#EF4444'),
-                hoverinfo='none'
-            ))
-            fig_int.update_layout(
-                template="plotly_dark",
-                margin=dict(l=75, r=55, t=10, b=30),
-                height=max(380, len(chart_dates) * 32),
-                xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
-                yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)"
-            )
-            st.plotly_chart(
-                fig_int, 
-                use_container_width=True, 
-                config={'staticPlot': True, 'displayModeBar': False}
-            )
+            if chart_intereses:
+                max_int = max(chart_intereses) if chart_intereses else 1.0
+                pos_int = ['outside' if v < max_int * 0.35 else 'inside' for v in chart_intereses]
+                
+                fig_int = go.Figure()
+                fig_int.add_trace(go.Bar(
+                    x=chart_intereses,
+                    y=chart_dates,
+                    orientation='h',
+                    marker_color='#EF4444',
+                    text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_intereses],
+                    textposition=pos_int,
+                    textfont=dict(size=11),
+                    insidetextfont=dict(color='#FFFFFF'),
+                    outsidetextfont=dict(color='#EF4444'),
+                    hoverinfo='none'
+                ))
+                fig_int.update_layout(
+                    template="plotly_dark",
+                    margin=dict(l=75, r=60, t=10, b=30),
+                    height=max(380, len(chart_dates) * 32),
+                    xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
+                    yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(
+                    fig_int, 
+                    use_container_width=True, 
+                    config={'staticPlot': True, 'displayModeBar': False}
+                )
 
-        # PESTAÑA 2: SALDO FIN DE MES (BARRAS HORIZONTALES)
+        # PESTAÑA 2: SALDO FIN DE MES (BARRAS HORIZONTALES INTELIGENTES)
         with tab_saldo:
-            fig_sal = go.Figure()
-            fig_sal.add_trace(go.Bar(
-                x=chart_saldos,
-                y=chart_dates,
-                orientation='h',
-                marker_color='#3B82F6',
-                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_saldos],
-                textposition='inside',
-                textfont=dict(size=10, color='#FFFFFF'),
-                hoverinfo='none'
-            ))
-            fig_sal.update_layout(
-                template="plotly_dark",
-                margin=dict(l=75, r=20, t=10, b=30),
-                height=max(380, len(chart_dates) * 32),
-                xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
-                yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)"
-            )
-            st.plotly_chart(
-                fig_sal, 
-                use_container_width=True, 
-                config={'staticPlot': True, 'displayModeBar': False}
-            )
+            if chart_saldos:
+                max_sal = max(chart_saldos) if chart_saldos else 1.0
+                pos_sal = ['outside' if v < max_sal * 0.35 else 'inside' for v in chart_saldos]
+
+                fig_sal = go.Figure()
+                fig_sal.add_trace(go.Bar(
+                    x=chart_saldos,
+                    y=chart_dates,
+                    orientation='h',
+                    marker_color='#3B82F6',
+                    text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in chart_saldos],
+                    textposition=pos_sal,
+                    textfont=dict(size=10),
+                    insidetextfont=dict(color='#FFFFFF'),
+                    outsidetextfont=dict(color='#38BDF8'),
+                    hoverinfo='none'
+                ))
+                fig_sal.update_layout(
+                    template="plotly_dark",
+                    margin=dict(l=75, r=60, t=10, b=30),
+                    height=max(380, len(chart_dates) * 32),
+                    xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
+                    yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(
+                    fig_sal, 
+                    use_container_width=True, 
+                    config={'staticPlot': True, 'displayModeBar': False}
+                )
+
+        # PESTAÑA 3: INTERÉS DIARIO PROMEDIO (BARRAS HORIZONTALES INTELIGENTES)
+        with tab_avg:
+            if avg_daily_vals:
+                max_avg = max(avg_daily_vals) if avg_daily_vals else 1.0
+                pos_avg = ['outside' if v < max_avg * 0.35 else 'inside' for v in avg_daily_vals]
+
+                fig_avg = go.Figure()
+                fig_avg.add_trace(go.Bar(
+                    x=avg_daily_vals,
+                    y=avg_daily_dates,
+                    orientation='h',
+                    marker_color='#22C55E',
+                    text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in avg_daily_vals],
+                    textposition=pos_avg,
+                    textfont=dict(size=11),
+                    insidetextfont=dict(color='#FFFFFF'),
+                    outsidetextfont=dict(color='#22C55E'),
+                    hoverinfo='none'
+                ))
+                fig_avg.update_layout(
+                    template="plotly_dark",
+                    margin=dict(l=75, r=60, t=10, b=30),
+                    height=max(380, len(avg_daily_dates) * 32),
+                    xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
+                    yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(
+                    fig_avg, 
+                    use_container_width=True, 
+                    config={'staticPlot': True, 'displayModeBar': False}
+                )
