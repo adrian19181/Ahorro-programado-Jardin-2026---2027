@@ -48,6 +48,26 @@ def obtener_valor(sheet, celda_principal, celda_secundaria=None):
         val = sheet[celda_secundaria].value
     return val
 
+def fmt_moneda(val):
+    if val is None:
+        return "$0,00"
+    try:
+        f = float(val)
+        return f"${f:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
+    except:
+        return str(val)
+
+def fmt_porcentaje(val):
+    if val is None:
+        return "0,00%"
+    try:
+        f = float(val)
+        if f <= 1:
+            f = f * 100
+        return f"{f:.2f}%".replace(".", ",")
+    except:
+        return str(val)
+
 # ==============================================================================
 # ENCABEZADO PRINCIPAL Y RECARGA
 # ==============================================================================
@@ -183,7 +203,129 @@ if wb is not None:
     st.divider()
 
     # ==============================================================================
-    # 2. TABLA RESUMEN DE MOVIMIENTOS DINÁMICA (AZ:BF)
+    # 2. SECCIONES DE KPIS: RESULTADOS Y RENDIMIENTOS (DEBAJO DE CONDICIONES)
+    # ==============================================================================
+    # Lectura directa desde las celdas de Excel
+    d2 = sheet["D2"].value   # Total Interés Ganados
+    d3 = sheet["D3"].value   # Total Depósitos Mensuales
+    d4 = sheet["D4"].value   # Total Depósitos Personales
+    d5 = sheet["D5"].value   # Total Depositado sin intereses
+    d6 = sheet["D6"].value   # Total Ganado con intereses
+
+    d7 = sheet["D7"].value   # ROI RENTABILIDAD ACUMULADA
+    d10 = sheet["D10"].value # Rentabilidad total bruta
+    d16 = sheet["D16"].value # Saldo Fin mes Promedio Ponderado
+    d19 = sheet["D19"].value # Aportes Personales Promedio
+    b19 = sheet["B19"].value # Interés Diario Promedio
+
+    # Estilos CSS para tarjetas KPI responsivas
+    css_kpis = """<style>
+.kpi-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 20px;
+}
+.kpi-card {
+    background-color: #ffffff;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    padding: 8px 10px;
+    flex: 1 1 150px;
+    min-width: 130px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    text-align: center;
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+}
+.kpi-card-yellow {
+    border-top: 4px solid #FFE600;
+    background-color: #FFFFF0;
+}
+.kpi-card-green {
+    border-top: 4px solid #22C55E;
+    background-color: #F0FDF4;
+}
+.kpi-card-blue {
+    border-top: 4px solid #3B82F6;
+    background-color: #EFF6FF;
+}
+.kpi-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #374151;
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+.kpi-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #000000;
+}
+</style>"""
+
+    # --- KPI RESULTADOS ---
+    st.subheader("📊 KPI Resultados")
+    
+    html_kpi_resultados = f"""{css_kpis}
+<div class="kpi-grid">
+<div class="kpi-card kpi-card-green">
+<div class="kpi-label">Total Interés Ganados</div>
+<div class="kpi-value">{fmt_moneda(d2)}</div>
+</div>
+<div class="kpi-card kpi-card-blue">
+<div class="kpi-label">Total Dep. Mensuales</div>
+<div class="kpi-value">{fmt_moneda(d3)}</div>
+</div>
+<div class="kpi-card kpi-card-yellow">
+<div class="kpi-label">Total Dep. Personales</div>
+<div class="kpi-value">{fmt_moneda(d4)}</div>
+</div>
+<div class="kpi-card kpi-card-blue">
+<div class="kpi-label">Total Depositado (sin Int.)</div>
+<div class="kpi-value">{fmt_moneda(d5)}</div>
+</div>
+<div class="kpi-card kpi-card-green">
+<div class="kpi-label">Total Ganado (con Int.)</div>
+<div class="kpi-value">{fmt_moneda(d6)}</div>
+</div>
+</div>"""
+
+    st.markdown(html_kpi_resultados, unsafe_allow_html=True)
+
+    # --- KPI RENDIMIENTOS ---
+    st.subheader("📈 KPI Rendimientos")
+
+    html_kpi_rendimientos = f"""<div class="kpi-grid">
+<div class="kpi-card kpi-card-green">
+<div class="kpi-label">ROI Rentabilidad Acum.</div>
+<div class="kpi-value">{fmt_porcentaje(d7)}</div>
+</div>
+<div class="kpi-card kpi-card-green">
+<div class="kpi-label">Rentabilidad Total Bruta</div>
+<div class="kpi-value">{fmt_porcentaje(d10)}</div>
+</div>
+<div class="kpi-card kpi-card-blue">
+<div class="kpi-label">Saldo Fin Mes Prom. Pond.</div>
+<div class="kpi-value">{fmt_moneda(d16)}</div>
+</div>
+<div class="kpi-card kpi-card-yellow">
+<div class="kpi-label">Aportes Personales Prom.</div>
+<div class="kpi-value">{fmt_moneda(d19)}</div>
+</div>
+<div class="kpi-card kpi-card-green">
+<div class="kpi-label">Interés Diario Promedio</div>
+<div class="kpi-value">{fmt_moneda(b19)}</div>
+</div>
+</div>"""
+
+    st.markdown(html_kpi_rendimientos, unsafe_allow_html=True)
+
+    st.divider()
+
+    # ==============================================================================
+    # 3. TABLA RESUMEN DE MOVIMIENTOS DINÁMICA (AZ:BF)
     # ==============================================================================
     st.subheader("📑 Tabla Resumen de Movimientos")
 
@@ -232,9 +374,6 @@ if wb is not None:
         })
         r += 1
 
-    # ==============================================================================
-    # CONTROLES DE FILTRO INTERACTIVO (Pills táctiles)
-    # ==============================================================================
     opciones_disponibles = ["🟨 Aportes Personales", "🟧 Aportes Mensuales", "🟦 Intereses Ganados"]
     
     st.write("**Filtra los movimientos por categoría:**")
@@ -259,18 +398,15 @@ if wb is not None:
         m for m in movements if m['tipo_cat'] in (categorias_seleccionadas or [])
     ]
 
-    # ==============================================================================
-    # TABLA HTML OPTIMIZADA (CABECERA FIJA + ANCHO AJUSTADO + CENTRADO)
-    # ==============================================================================
     rows_html = []
     for m in movimientos_filtrados:
         dt_str = m['fecha'].strftime('%d/%m/%Y') if hasattr(m['fecha'], 'strftime') else str(m['fecha'])
-        dep_m_str = f"{m['dep_m']:,.2f}".replace(".", ",") if m['dep_m'] > 0 else "0,00"
-        dep_p_str = f"{m['dep_p']:,.2f}".replace(".", ",") if m['dep_p'] > 0 else "0,00"
-        saldo_str = f"{m['saldo_acum']:,.2f}".replace(".", ",")
+        dep_m_str = f"{m['dep_m']:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") if m['dep_m'] > 0 else "0,00"
+        dep_p_str = f"{m['dep_p']:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") if m['dep_p'] > 0 else "0,00"
+        saldo_str = f"{m['saldo_acum']:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
         int_d_str = f"{m['int_diario']:.2f}".replace(".", ",")
         inc_d_str = f"{m['inc_int_d']:.2f}".replace(".", ",") if m['inc_int_d'] > 0 else ""
-        int_m_str = f"<b>{m['int_m']:,.2f}</b>".replace(".", ",") if m['int_m'] is not None else ""
+        int_m_str = f"<b>{m['int_m']:,.2f}</b>".replace(".", "X").replace(",", ".").replace("X", ",") if m['int_m'] is not None else ""
 
         rows_html.append(f"""<tr style="background-color: {m['bg_color']};">
 <td><b>{dt_str}</b></td>
