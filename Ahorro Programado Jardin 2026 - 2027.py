@@ -3,6 +3,7 @@ import io
 import requests
 import openpyxl
 import pandas as pd
+import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 
@@ -588,10 +589,11 @@ if wb is not None:
         avg_daily_vals.append(avg_val)
 
     # 4.3 CREACIÓN DE PESTAÑAS Y GRÁFICOS
-    tab_int, tab_saldo, tab_avg = st.tabs([
+    tab_int, tab_saldo, tab_avg, tab_comp = st.tabs([
         "🔴 Interés Ganado Mensual", 
         "🟦 Saldo Fin de Mes", 
-        "🟢 Interés Diario Promedio"
+        "🟢 Interés Diario Promedio",
+        "📊 Capital vs. Interés Acumulado"
     ])
 
     # PESTAÑA 1: INTERÉS GANADO MENSUAL
@@ -692,6 +694,59 @@ if wb is not None:
             )
             st.plotly_chart(
                 fig_avg, 
+                use_container_width=True, 
+                config={'staticPlot': True, 'displayModeBar': False}
+            )
+
+    # PESTAÑA 4: CAPITAL VS. INTERÉS ACUMULADO (NUEVO GRÁFICO)
+    with tab_comp:
+        if chart_saldos and chart_intereses:
+            cum_int = np.cumsum(chart_intereses).tolist()
+            cum_cap = [max(0.0, s - i) for s, i in zip(chart_saldos, cum_int)]
+
+            fig_comp = go.Figure()
+            fig_comp.add_trace(go.Bar(
+                name='Capital Aportado',
+                x=cum_cap,
+                y=chart_dates,
+                orientation='h',
+                marker_color='#3B82F6',
+                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in cum_cap],
+                textposition='inside',
+                textfont=dict(size=10, color='#FFFFFF'),
+                hoverinfo='name+x'
+            ))
+            fig_comp.add_trace(go.Bar(
+                name='Interés Acumulado',
+                x=cum_int,
+                y=chart_dates,
+                orientation='h',
+                marker_color='#22C55E',
+                text=[f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",") for v in cum_int],
+                textposition='inside',
+                textfont=dict(size=10, color='#FFFFFF'),
+                hoverinfo='name+x'
+            ))
+            fig_comp.update_layout(
+                barmode='stack',
+                template="plotly_dark",
+                legend=dict(
+                    orientation="h", 
+                    yanchor="bottom", 
+                    y=1.02, 
+                    xanchor="right", 
+                    x=1, 
+                    font=dict(size=11, color="#CBD5E1")
+                ),
+                margin=dict(l=75, r=20, t=30, b=30),
+                height=max(380, len(chart_dates) * 32),
+                xaxis=dict(showgrid=True, gridcolor='#334155', title=""),
+                yaxis=dict(autorange="reversed", tickfont=dict(size=10, color='#CBD5E1')),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)"
+            )
+            st.plotly_chart(
+                fig_comp, 
                 use_container_width=True, 
                 config={'staticPlot': True, 'displayModeBar': False}
             )
