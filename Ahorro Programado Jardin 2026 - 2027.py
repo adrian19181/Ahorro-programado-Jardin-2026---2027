@@ -102,7 +102,8 @@ if wb is not None:
     meses_real = sheet["H9"].value
     dias_real = sheet["J9"].value
 
-    tna_val = float(tna) * 100 if isinstance(tna, (int, float)) and tna <= 1 else float(tna or 0)
+    tna_num = float(tna) if isinstance(tna, (int, float)) else 0.065
+    tna_val = tna_num * 100 if tna_num <= 1 else tna_num
     fecha_ini_str = fecha_inicio.strftime('%d/%m/%Y') if hasattr(fecha_inicio, 'strftime') else str(fecha_inicio or "-")
     fecha_fin_str = fecha_fin.strftime('%d/%m/%Y') if hasattr(fecha_fin, 'strftime') else str(fecha_fin or "-")
     val_diaria_str = f"{float(tasa_diaria):.7f}".replace(".", ",") if isinstance(tasa_diaria, (int, float)) else str(tasa_diaria)
@@ -203,20 +204,31 @@ if wb is not None:
     st.divider()
 
     # ==============================================================================
-    # 2. SECCIONES DE KPIS: RESULTADOS Y RENDIMIENTOS (DEBAJO DE CONDICIONES)
+    # 2. SECCIONES DE KPIS: RESULTADOS Y RENDIMIENTOS
     # ==============================================================================
-    # Lectura directa desde las celdas de Excel
+    # Lectura directa desde Excel
     d2 = sheet["D2"].value   # Total Interés Ganados
     d3 = sheet["D3"].value   # Total Depósitos Mensuales
     d4 = sheet["D4"].value   # Total Depósitos Personales
     d5 = sheet["D5"].value   # Total Depositado sin intereses
     d6 = sheet["D6"].value   # Total Ganado con intereses
 
+    b7 = sheet["B7"].value   # TIR (Tasa Interna de Retorno) celda B7
     d7 = sheet["D7"].value   # ROI RENTABILIDAD ACUMULADA
     d10 = sheet["D10"].value # Rentabilidad total bruta
     d16 = sheet["D16"].value # Saldo Fin mes Promedio Ponderado
     d19 = sheet["D19"].value # Aportes Personales Promedio
     b19 = sheet["B19"].value # Interés Diario Promedio
+
+    # CÁLCULOS DE KPIS SOLICITADOS
+    # 1. TEA (Tasa Efectiva Anual en función de TNA F1/H1): (1 + TNA/12)^12 - 1
+    tna_dec = tna_num if tna_num <= 1 else tna_num / 100.0
+    tea_calc = ((1.0 + (tna_dec / 12.0)) ** 12.0) - 1.0
+
+    # 2. Ratio de Ganancia (% de intereses sobre el saldo total): D2 / D6
+    d2_num = float(d2) if isinstance(d2, (int, float)) else 0.0
+    d6_num = float(d6) if isinstance(d6, (int, float)) else 0.0
+    ratio_ganancia_calc = (d2_num / d6_num) if d6_num > 0 else 0.0
 
     # Estilos CSS para tarjetas KPI responsivas
     css_kpis = """<style>
@@ -232,8 +244,8 @@ if wb is not None:
     border: 1px solid #000000;
     border-radius: 6px;
     padding: 8px 10px;
-    flex: 1 1 150px;
-    min-width: 130px;
+    flex: 1 1 140px;
+    min-width: 125px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     text-align: center;
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
@@ -249,6 +261,10 @@ if wb is not None:
 .kpi-card-blue {
     border-top: 4px solid #3B82F6;
     background-color: #EFF6FF;
+}
+.kpi-card-purple {
+    border-top: 4px solid #8B5CF6;
+    background-color: #F5F3FF;
 }
 .kpi-label {
     font-size: 11px;
@@ -290,6 +306,10 @@ if wb is not None:
 <div class="kpi-label">Total Ganado (con Int.)</div>
 <div class="kpi-value">{fmt_moneda(d6)}</div>
 </div>
+<div class="kpi-card kpi-card-purple">
+<div class="kpi-label">Ratio de Ganancia</div>
+<div class="kpi-value">{fmt_porcentaje(ratio_ganancia_calc)}</div>
+</div>
 </div>"""
 
     st.markdown(html_kpi_resultados, unsafe_allow_html=True)
@@ -298,6 +318,14 @@ if wb is not None:
     st.subheader("📈 KPI Rendimientos")
 
     html_kpi_rendimientos = f"""<div class="kpi-grid">
+<div class="kpi-card kpi-card-purple">
+<div class="kpi-label">TIR (Tasa Int. Retorno)</div>
+<div class="kpi-value">{fmt_porcentaje(b7)}</div>
+</div>
+<div class="kpi-card kpi-card-purple">
+<div class="kpi-label">TEA (Tasa Efe. Anual)</div>
+<div class="kpi-value">{fmt_porcentaje(tea_calc)}</div>
+</div>
 <div class="kpi-card kpi-card-green">
 <div class="kpi-label">ROI Rentabilidad Acum.</div>
 <div class="kpi-value">{fmt_porcentaje(d7)}</div>
