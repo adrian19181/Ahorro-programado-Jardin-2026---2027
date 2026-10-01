@@ -113,8 +113,8 @@ if wb is not None:
 
     st.subheader("📋 Condiciones del Ahorro Programado")
 
-    css_excel_global = """<style>
-.excel-tbl-card {
+    html_condiciones = f"""<style>
+.excel-tbl-card {{
     background-color: #ffffff;
     padding: 0px;
     border-radius: 8px;
@@ -124,8 +124,8 @@ if wb is not None:
     max-width: 100%;
     overflow-x: auto;
     border: 1px solid #000000;
-}
-.excel-tbl {
+}}
+.excel-tbl {{
     border-collapse: separate;
     border-spacing: 0;
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
@@ -133,45 +133,19 @@ if wb is not None:
     color: #000000;
     width: 100%;
     margin: 0;
-}
-.excel-tbl th {
-    background-color: #1F2937;
-    color: #ffffff;
-    border-right: 1px solid #000000;
-    border-bottom: 1px solid #000000;
-    padding: 6px 8px;
-    text-align: center;
-    font-weight: bold;
-    font-size: 13px;
-    white-space: nowrap;
-    min-width: 90px;
-}
-.excel-tbl th:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 10;
-    background-color: #1F2937 !important;
-    text-align: center;
-    white-space: normal !important;
-    word-wrap: break-word;
-    width: 125px;
-    min-width: 125px;
-    max-width: 125px;
-    font-size: 12px;
-}
-.excel-tbl td {
+}}
+.excel-tbl td {{
+    position: relative;
+    z-index: 1;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
     padding: 6px 8px;
     vertical-align: middle;
-    text-align: center;
-    white-space: nowrap;
-    min-width: 90px;
-}
-.lbl-yellow {
-    position: sticky;
-    left: 0;
-    z-index: 5;
+}}
+.lbl-yellow {{
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
     background-color: #FFE600 !important;
     font-weight: bold;
     text-align: center;
@@ -183,47 +157,29 @@ if wb is not None:
     max-width: 125px;
     font-size: 11px;
     padding: 6px 4px !important;
+    background-clip: padding-box !important;
     box-shadow: 2px 0 5px rgba(0,0,0,0.15);
-}
-.lbl-mov-sticky {
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    font-weight: bold;
-    text-align: center !important;
-    white-space: normal !important;
-    word-wrap: break-word;
-    line-height: 1.2;
-    width: 125px;
-    min-width: 125px;
-    max-width: 125px;
-    font-size: 11px;
-    padding: 6px 4px !important;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.15);
-}
-.val-green {
+}}
+.val-green {{
     background-color: #E2EFDA;
     text-align: center;
     font-weight: 600;
     white-space: nowrap;
-}
-.val-formula {
+}}
+.val-formula {{
     background-color: #D9E1F2;
     text-align: center;
     font-size: 12px;
     white-space: nowrap;
-}
-.val-tan {
+}}
+.val-tan {{
     background-color: #FFF2CC;
     text-align: center;
     font-weight: 600;
     white-space: nowrap;
-}
-</style>"""
-
-    st.markdown(css_excel_global, unsafe_allow_html=True)
-
-    html_condiciones = f"""<div class="excel-tbl-card">
+}}
+</style>
+<div class="excel-tbl-card">
 <table class="excel-tbl">
 <tr>
 <td class="lbl-yellow">Tasa Nominal Anual</td>
@@ -314,10 +270,22 @@ if wb is not None:
     text-align: center;
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
 }
-.kpi-card-yellow { border-top: 4px solid #FFE600; background-color: #FFFFF0; }
-.kpi-card-green { border-top: 4px solid #22C55E; background-color: #F0FDF4; }
-.kpi-card-blue { border-top: 4px solid #3B82F6; background-color: #EFF6FF; }
-.kpi-card-purple { border-top: 4px solid #8B5CF6; background-color: #F5F3FF; }
+.kpi-card-yellow {
+    border-top: 4px solid #FFE600;
+    background-color: #FFFFF0;
+}
+.kpi-card-green {
+    border-top: 4px solid #22C55E;
+    background-color: #F0FDF4;
+}
+.kpi-card-blue {
+    border-top: 4px solid #3B82F6;
+    background-color: #EFF6FF;
+}
+.kpi-card-purple {
+    border-top: 4px solid #8B5CF6;
+    background-color: #F5F3FF;
+}
 .kpi-label {
     font-size: 11px;
     font-weight: bold;
@@ -401,7 +369,7 @@ if wb is not None:
     st.divider()
 
     # ==============================================================================
-    # 3. TABLA RESUMEN DE MOVIMIENTOS DINÁMICA TIPO EXCEL (AZ:BF)
+    # 3. TABLA RESUMEN DE MOVIMIENTOS DINÁMICA (AZ:BF)
     # ==============================================================================
     st.subheader("📑 Tabla Resumen de Movimientos")
 
@@ -484,24 +452,103 @@ if wb is not None:
         inc_d_str = f"{m['inc_int_d']:.2f}".replace(".", ",") if m['inc_int_d'] > 0 else ""
         int_m_str = f"<b>{m['int_m']:,.2f}</b>".replace(".", "X").replace(",", ".").replace("X", ",") if m['int_m'] is not None else ""
 
-        c = m['bg_color']
-
         rows_html.append(
-            f'<tr>'
-            f'<td class="lbl-mov-sticky" style="background-color: {c} !important;"><b>{dt_str}</b></td>'
-            f'<td style="background-color: {c};">{dep_m_str}</td>'
-            f'<td style="background-color: {c};">{dep_p_str}</td>'
-            f'<td style="background-color: {c}; font-weight: 600;">{saldo_str}</td>'
-            f'<td style="background-color: {c};">{int_d_str}</td>'
-            f'<td style="background-color: {c};">{inc_d_str}</td>'
-            f'<td style="background-color: {c};">{int_m_str}</td>'
+            f'<tr style="background-color: {m["bg_color"]};">'
+            f'<td class="lbl-sticky-col" style="background-color: {m["bg_color"]} !important;"><b>{dt_str}</b></td>'
+            f'<td>{dep_m_str}</td>'
+            f'<td>{dep_p_str}</td>'
+            f'<td style="font-weight: 600;">{saldo_str}</td>'
+            f'<td>{int_d_str}</td>'
+            f'<td>{inc_d_str}</td>'
+            f'<td>{int_m_str}</td>'
             f'</tr>'
         )
 
     tabla_movs_body = "".join(rows_html)
 
-    html_movs_excel = f"""<div class="excel-tbl-card">
-<table class="excel-tbl">
+    html_movs_completo = f"""<style>
+.tbl-scroll-wrapper {{
+    max-height: 480px;
+    max-width: 100%;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #000000;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    margin-top: 10px;
+    margin-bottom: 25px;
+    display: block;
+    padding: 0px;
+}}
+.tbl-sticky-movs {{
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    color: #000000;
+    margin: 0;
+}}
+.tbl-sticky-movs th {{
+    position: relative;
+    z-index: 10;
+    background-color: #1F2937;
+    color: #ffffff;
+    border-right: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    padding: 6px 8px;
+    text-align: center;
+    font-weight: bold;
+    line-height: 1.15;
+    white-space: nowrap;
+    min-width: 90px;
+}}
+.tbl-sticky-movs th:first-child {{
+    position: sticky !important;
+    top: 0;
+    left: 0;
+    z-index: 30 !important;
+    background-color: #1F2937 !important;
+    text-align: center;
+    white-space: normal !important;
+    word-wrap: break-word;
+    width: 125px;
+    min-width: 125px;
+    max-width: 125px;
+    border-right: 1px solid #000000;
+}}
+.tbl-sticky-movs td {{
+    position: relative;
+    z-index: 1;
+    border-right: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    padding: 6px 8px;
+    vertical-align: middle;
+    text-align: center !important;
+    white-space: nowrap;
+    min-width: 90px;
+}}
+.lbl-sticky-col {{
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
+    font-weight: bold;
+    text-align: center !important;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 1.2;
+    width: 125px;
+    min-width: 125px;
+    max-width: 125px;
+    font-size: 11px;
+    padding: 6px 4px !important;
+    background-clip: padding-box !important;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.15);
+}}
+</style>
+<div class="tbl-scroll-wrapper">
+<table class="tbl-sticky-movs">
 <thead>
 <tr>
 <th>Fechas</th>
@@ -519,7 +566,7 @@ if wb is not None:
 </table>
 </div>"""
 
-    st.markdown(html_movs_excel, unsafe_allow_html=True)
+    st.markdown(html_movs_completo, unsafe_allow_html=True)
 
     st.divider()
 
@@ -551,9 +598,10 @@ if wb is not None:
         chart_intereses.append(int_mes_val)
         r_chart += 1
 
-    # 4.2 CÁLCULO DE INTERÉS DIARIO PROMEDIO POR MES
+    # 4.2 CÁLCULO DE INTERÉS DIARIO PROMEDIO POR MES (COL A Y R CON FALLBACK)
     daily_int_by_month = {}
     
+    # Intento 1: Leer directamente desde Columna A (1) y Columna R (18)
     for r_d in range(2, sheet.max_row + 1):
         f_val = sheet.cell(row=r_d, column=1).value  # Col A (Fechas)
         r_val = sheet.cell(row=r_d, column=18).value # Col R (Interés Diario)
@@ -561,9 +609,14 @@ if wb is not None:
         if f_val is None or str(f_val).strip() == "":
             continue
 
-        dt = f_val if hasattr(f_val, 'year') else pd.to_datetime(f_val, dayfirst=True, errors='coerce')
-        if pd.isna(dt) or dt is None:
-            continue
+        dt = None
+        if hasattr(f_val, 'year'):
+            dt = f_val
+        else:
+            try:
+                dt = pd.to_datetime(f_val, dayfirst=True)
+            except:
+                continue
 
         try:
             num_val = float(r_val) if r_val is not None else 0.0
@@ -576,14 +629,13 @@ if wb is not None:
                 daily_int_by_month[m_key] = []
             daily_int_by_month[m_key].append(num_val)
 
+    # Intento 2 (Fallback): Si las fórmulas en Col A/R no tienen valor en caché, usas movimientos
     if not daily_int_by_month and movements:
         for m in movements:
             f_val = m['fecha']
             r_val = m['int_diario']
             if f_val is not None and r_val > 0:
-                dt = f_val if hasattr(f_val, 'year') else pd.to_datetime(f_val, dayfirst=True, errors='coerce')
-                if pd.isna(dt) or dt is None:
-                    continue
+                dt = f_val if hasattr(f_val, 'year') else pd.to_datetime(f_val, dayfirst=True)
                 m_key = (dt.year, dt.month)
                 if m_key not in daily_int_by_month:
                     daily_int_by_month[m_key] = []
@@ -708,7 +760,7 @@ if wb is not None:
                 config={'staticPlot': True, 'displayModeBar': False}
             )
 
-    # PESTAÑA 4: INTERÉS ACUMULADO CRECIENTE
+    # PESTAÑA 4: INTERÉS ACUMULADO CRECIENTE (SOLUCIÓN DE ESCALA)
     with tab_cum:
         if chart_saldos and chart_intereses:
             cum_int = np.cumsum(chart_intereses).tolist()
@@ -727,7 +779,7 @@ if wb is not None:
                 x=cum_int,
                 y=chart_dates,
                 orientation='h',
-                marker_color='#10B981',
+                marker_color='#10B981', # Verde Esmeralda
                 text=labels_cum,
                 textposition=pos_cum,
                 textfont=dict(size=11),
