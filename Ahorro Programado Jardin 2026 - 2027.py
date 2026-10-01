@@ -452,15 +452,17 @@ if wb is not None:
         inc_d_str = f"{m['inc_int_d']:.2f}".replace(".", ",") if m['inc_int_d'] > 0 else ""
         int_m_str = f"<b>{m['int_m']:,.2f}</b>".replace(".", "X").replace(",", ".").replace("X", ",") if m['int_m'] is not None else ""
 
+        c = m['bg_color']
+
         rows_html.append(
-            f'<tr style="background-color: {m["bg_color"]};">'
-            f'<td class="lbl-sticky-col" style="background-color: {m["bg_color"]} !important;"><b>{dt_str}</b></td>'
-            f'<td>{dep_m_str}</td>'
-            f'<td>{dep_p_str}</td>'
-            f'<td style="font-weight: 600;">{saldo_str}</td>'
-            f'<td>{int_d_str}</td>'
-            f'<td>{inc_d_str}</td>'
-            f'<td>{int_m_str}</td>'
+            f'<tr style="background-color: {c};">'
+            f'<td class="lbl-sticky-col" style="background-color: {c} !important;"><b>{dt_str}</b></td>'
+            f'<td style="background-color: {c};">{dep_m_str}</td>'
+            f'<td style="background-color: {c};">{dep_p_str}</td>'
+            f'<td style="background-color: {c}; font-weight: 600;">{saldo_str}</td>'
+            f'<td style="background-color: {c};">{int_d_str}</td>'
+            f'<td style="background-color: {c};">{inc_d_str}</td>'
+            f'<td style="background-color: {c};">{int_m_str}</td>'
             f'</tr>'
         )
 
@@ -491,8 +493,6 @@ if wb is not None:
     margin: 0;
 }}
 .tbl-sticky-movs th {{
-    position: relative;
-    z-index: 10;
     background-color: #1F2937;
     color: #ffffff;
     border-right: 1px solid #000000;
@@ -508,7 +508,7 @@ if wb is not None:
     position: sticky !important;
     top: 0;
     left: 0;
-    z-index: 30 !important;
+    z-index: 50 !important;
     background-color: #1F2937 !important;
     text-align: center;
     white-space: normal !important;
@@ -519,8 +519,8 @@ if wb is not None:
     border-right: 1px solid #000000;
 }}
 .tbl-sticky-movs td {{
-    position: relative;
-    z-index: 1;
+    position: static !important;
+    z-index: auto !important;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
     padding: 6px 8px;
@@ -544,7 +544,9 @@ if wb is not None:
     font-size: 11px;
     padding: 6px 4px !important;
     background-clip: padding-box !important;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.15);
+    box-shadow: 3px 0 6px rgba(0,0,0,0.25);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
 }}
 </style>
 <div class="tbl-scroll-wrapper">
