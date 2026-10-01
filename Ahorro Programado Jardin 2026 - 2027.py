@@ -135,15 +135,17 @@ if wb is not None:
     margin: 0;
 }}
 .excel-tbl td {{
+    position: relative;
+    z-index: 1;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
     padding: 6px 8px;
     vertical-align: middle;
 }}
 .lbl-yellow {{
-    position: sticky;
-    left: 0;
-    z-index: 5;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
     background-color: #FFE600 !important;
     font-weight: bold;
     text-align: center;
@@ -155,6 +157,8 @@ if wb is not None:
     max-width: 125px;
     font-size: 11px;
     padding: 6px 4px !important;
+    background-clip: padding-box !important;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.15);
 }}
 .val-green {{
     background-color: #E2EFDA;
@@ -487,8 +491,7 @@ if wb is not None:
     margin: 0;
 }}
 .tbl-sticky-movs th {{
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 10;
     background-color: #1F2937;
     color: #ffffff;
@@ -502,19 +505,22 @@ if wb is not None:
     min-width: 90px;
 }}
 .tbl-sticky-movs th:first-child {{
-    position: sticky;
+    position: sticky !important;
     top: 0;
     left: 0;
-    z-index: 20;
-    background-color: #1F2937;
+    z-index: 30 !important;
+    background-color: #1F2937 !important;
     text-align: center;
     white-space: normal !important;
     word-wrap: break-word;
     width: 125px;
     min-width: 125px;
     max-width: 125px;
+    border-right: 1px solid #000000;
 }}
 .tbl-sticky-movs td {{
+    position: relative;
+    z-index: 1;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
     padding: 6px 8px;
@@ -524,9 +530,9 @@ if wb is not None:
     min-width: 90px;
 }}
 .lbl-sticky-col {{
-    position: sticky;
-    left: 0;
-    z-index: 5;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
     font-weight: bold;
     text-align: center !important;
     white-space: normal !important;
@@ -537,6 +543,8 @@ if wb is not None:
     max-width: 125px;
     font-size: 11px;
     padding: 6px 4px !important;
+    background-clip: padding-box !important;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.15);
 }}
 </style>
 <div class="tbl-scroll-wrapper">
@@ -763,7 +771,7 @@ if wb is not None:
 
             labels_cum = [
                 f"${v:,.2f} ({p:.1f}%)".replace(".", "X").replace(",", ".").replace("X", ",")
-                for v, p in zip(cum_int, pct_roi)
+                for v, p in zip(cum_int, chart_saldos)
             ]
 
             fig_cum = go.Figure()
