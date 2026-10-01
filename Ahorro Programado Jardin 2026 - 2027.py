@@ -450,7 +450,7 @@ if wb is not None:
 
         rows_html.append(
             f'<tr style="background-color: {m["bg_color"]};">'
-            f'<td><b>{dt_str}</b></td>'
+            f'<td class="lbl-sticky-col" style="background-color: {m["bg_color"]} !important;"><b>{dt_str}</b></td>'
             f'<td>{dep_m_str}</td>'
             f'<td>{dep_p_str}</td>'
             f'<td style="font-weight: 600;">{saldo_str}</td>'
@@ -469,19 +469,22 @@ if wb is not None:
     overflow-y: auto;
     overflow-x: auto;
     border: 1px solid #000000;
-    border-radius: 6px;
+    border-radius: 8px;
     background-color: #ffffff;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     margin-top: 10px;
     margin-bottom: 25px;
-    display: inline-block;
+    display: block;
+    padding: 0px;
 }}
 .tbl-sticky-movs {{
-    width: auto;
-    border-collapse: collapse;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     color: #000000;
+    margin: 0;
 }}
 .tbl-sticky-movs th {{
     position: sticky;
@@ -489,19 +492,51 @@ if wb is not None:
     z-index: 10;
     background-color: #1F2937;
     color: #ffffff;
-    border: 1px solid #000000;
-    padding: 5px 6px;
+    border-right: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    padding: 6px 8px;
     text-align: center;
     font-weight: bold;
     line-height: 1.15;
     white-space: nowrap;
+    min-width: 90px;
+}}
+.tbl-sticky-movs th:first-child {{
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 20;
+    background-color: #1F2937;
+    text-align: center;
+    white-space: normal !important;
+    word-wrap: break-word;
+    width: 125px;
+    min-width: 125px;
+    max-width: 125px;
 }}
 .tbl-sticky-movs td {{
-    border: 1px solid #000000;
-    padding: 4px 6px;
+    border-right: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    padding: 6px 8px;
     vertical-align: middle;
     text-align: center !important;
     white-space: nowrap;
+    min-width: 90px;
+}}
+.lbl-sticky-col {{
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    font-weight: bold;
+    text-align: center !important;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 1.2;
+    width: 125px;
+    min-width: 125px;
+    max-width: 125px;
+    font-size: 11px;
+    padding: 6px 4px !important;
 }}
 </style>
 <div class="tbl-scroll-wrapper">
