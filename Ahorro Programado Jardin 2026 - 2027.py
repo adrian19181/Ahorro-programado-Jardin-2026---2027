@@ -511,7 +511,7 @@ if wb is not None:
     position: sticky !important;
     top: 0 !important;
     left: 0 !important;
-    z-index: 30 !important;
+    z-index: 50 !important;
     background-color: #1F2937 !important;
     text-align: center;
     white-space: normal !important;
@@ -522,8 +522,8 @@ if wb is not None:
     border-right: 1px solid #000000;
 }}
 .tbl-sticky-movs td {{
-    position: relative;
-    z-index: 1;
+    position: static !important;
+    z-index: auto !important;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
     padding: 6px 8px;
@@ -535,7 +535,7 @@ if wb is not None:
 .lbl-sticky-col {{
     position: sticky !important;
     left: 0 !important;
-    z-index: 20 !important;
+    z-index: 30 !important;
     font-weight: bold;
     text-align: center !important;
     white-space: normal !important;
@@ -547,7 +547,7 @@ if wb is not None:
     font-size: 11px;
     padding: 6px 4px !important;
     background-clip: padding-box !important;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+    box-shadow: 3px 0 6px rgba(0,0,0,0.25);
 }}
 </style>
 <div class="tbl-scroll-wrapper">
