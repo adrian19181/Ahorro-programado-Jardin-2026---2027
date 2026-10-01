@@ -455,7 +455,7 @@ if wb is not None:
         c = m['bg_color']
 
         rows_html.append(
-            f'<tr style="background-color: {c};">'
+            f'<tr>'
             f'<td class="lbl-sticky-col" style="background-color: {c} !important;"><b>{dt_str}</b></td>'
             f'<td style="background-color: {c};">{dep_m_str}</td>'
             f'<td style="background-color: {c};">{dep_p_str}</td>'
@@ -493,7 +493,10 @@ if wb is not None:
     margin: 0;
 }}
 .tbl-sticky-movs th {{
-    background-color: #1F2937;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background-color: #1F2937 !important;
     color: #ffffff;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
@@ -506,9 +509,9 @@ if wb is not None:
 }}
 .tbl-sticky-movs th:first-child {{
     position: sticky !important;
-    top: 0;
-    left: 0;
-    z-index: 50 !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 30 !important;
     background-color: #1F2937 !important;
     text-align: center;
     white-space: normal !important;
@@ -519,8 +522,8 @@ if wb is not None:
     border-right: 1px solid #000000;
 }}
 .tbl-sticky-movs td {{
-    position: static !important;
-    z-index: auto !important;
+    position: relative;
+    z-index: 1;
     border-right: 1px solid #000000;
     border-bottom: 1px solid #000000;
     padding: 6px 8px;
@@ -544,9 +547,7 @@ if wb is not None:
     font-size: 11px;
     padding: 6px 4px !important;
     background-clip: padding-box !important;
-    box-shadow: 3px 0 6px rgba(0,0,0,0.25);
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
+    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
 }}
 </style>
 <div class="tbl-scroll-wrapper">
