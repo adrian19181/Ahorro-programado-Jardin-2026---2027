@@ -116,44 +116,63 @@ if wb is not None:
     html_condiciones = f"""<style>
 .excel-tbl-card {{
     background-color: #ffffff;
-    padding: 10px;
-    border-radius: 6px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    display: inline-block;
-    margin-bottom: 15px;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: block;
+    margin-bottom: 25px;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid #000000;
 }}
 .excel-tbl {{
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     color: #000000;
-    width: auto;
+    width: 100%;
+    margin: 0;
 }}
 .excel-tbl td {{
-    border: 1px solid #000000;
-    padding: 4px 8px;
+    border-right: 1px solid #000000;
+    border-bottom: 1px solid #000000;
+    padding: 6px 8px;
     vertical-align: middle;
 }}
 .lbl-yellow {{
-    background-color: #FFE600;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    background-color: #FFE600 !important;
     font-weight: bold;
-    text-align: right;
-    white-space: nowrap;
+    text-align: center;
+    white-space: normal !important;
+    word-wrap: break-word;
+    line-height: 1.2;
+    width: 125px;
+    min-width: 125px;
+    max-width: 125px;
+    font-size: 11px;
+    padding: 6px 4px !important;
 }}
 .val-green {{
     background-color: #E2EFDA;
     text-align: center;
     font-weight: 600;
+    white-space: nowrap;
 }}
 .val-formula {{
     background-color: #D9E1F2;
     text-align: center;
     font-size: 12px;
+    white-space: nowrap;
 }}
 .val-tan {{
     background-color: #FFF2CC;
     text-align: center;
     font-weight: 600;
+    white-space: nowrap;
 }}
 </style>
 <div class="excel-tbl-card">
