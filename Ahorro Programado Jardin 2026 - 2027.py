@@ -796,8 +796,8 @@ if wb is not None:
             pos_cum = ['outside' if v < max_cum * 0.35 else 'inside' for v in cum_int]
 
             labels_cum = [
-                f"${v:,.2f} ({p:.1f}%)".replace(".", "X").replace(",", ".").replace("X", ",")
-                for v, p in zip(cum_int, chart_saldos)
+                f"${v:,.2f}".replace(".", "X").replace(",", ".").replace("X", ",")
+                for v in cum_int
             ]
 
             fig_cum = go.Figure()
