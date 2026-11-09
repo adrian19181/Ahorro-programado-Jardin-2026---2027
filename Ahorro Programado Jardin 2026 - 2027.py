@@ -243,13 +243,46 @@ if wb is not None:
     d19 = sheet["D19"].value # Aportes Personales Promedio
     b19 = sheet["B19"].value # Interés Diario Promedio
 
-    # CÁLCULOS DE KPIS
+    # CÁLCULOS DE KPIS EXISTENTES
     tna_dec = tna_num if tna_num <= 1 else tna_num / 100.0
     tea_calc = ((1.0 + (tna_dec / 12.0)) ** 12.0) - 1.0
 
     d2_num = float(d2) if isinstance(d2, (int, float)) else 0.0
+    d5_num = float(d5) if isinstance(d5, (int, float)) else 0.0
     d6_num = float(d6) if isinstance(d6, (int, float)) else 0.0
     ratio_ganancia_calc = (d2_num / d6_num) if d6_num > 0 else 0.0
+
+    # CÁLCULO DE KPIS ADICIONALES
+    # 1. Interés sobre Interés (Ganancia por Interés Compuesto)
+    chart_intereses_kpi = []
+    r_kpi = 2
+    while True:
+        f_cobro_k = sheet.cell(row=r_kpi, column=29).value  # Col AC
+        int_m_k = sheet.cell(row=r_kpi, column=33).value     # Col AG
+        if f_cobro_k is None or str(f_cobro_k).strip() == "":
+            break
+        chart_intereses_kpi.append(float(int_m_k) if isinstance(int_m_k, (int, float)) else 0.0)
+        r_kpi += 1
+
+    interes_compuesto_calc = 0.0
+    cum_int_temp = 0.0
+    tna_mensual = tna_dec / 12.0
+    for int_m_val in chart_intereses_kpi:
+        interes_compuesto_calc += cum_int_temp * tna_mensual
+        cum_int_temp += int_m_val
+
+    # 2. Retorno por cada $100 (ROI)
+    d7_num = float(d7) if isinstance(d7, (int, float)) else (d2_num / d5_num if d5_num > 0 else 0.0)
+    d7_pct = d7_num * 100.0 if d7_num <= 1.0 else d7_num
+    retorno_100_val = f"${d7_pct:.2f}".replace(".", ",")
+
+    # 3. Ganancia por $100 del Fondo (Ratio)
+    ratio_100_val = f"${ratio_ganancia_calc * 100.0:.2f}".replace(".", ",")
+
+    # 4. Productividad por cada $1.000 Depositados
+    b19_num = float(b19) if isinstance(b19, (int, float)) else 0.0
+    d16_num = float(d16) if isinstance(d16, (int, float)) else 0.0
+    prod_diaria_1000 = (b19_num / (d16_num / 1000.0)) if d16_num > 0 else (tna_dec / 360.0) * 1000.0
 
     css_kpis = """<style>
 .kpi-grid {
@@ -299,6 +332,13 @@ if wb is not None:
     font-weight: bold;
     color: #000000;
 }
+.kpi-formula {
+    font-size: 10px;
+    font-weight: 600;
+    color: #4B5563;
+    margin-top: 4px;
+    line-height: 1.25;
+}
 </style>"""
 
     # --- KPI RESULTADOS ---
@@ -345,10 +385,32 @@ if wb is not None:
 <div class="kpi-card kpi-card-green">
 <div class="kpi-label">ROI Rentabilidad Acum.</div>
 <div class="kpi-value">{fmt_porcentaje(d7)}</div>
+<div class="kpi-formula">(Total Interés ÷ Total Depositado)<br>({fmt_moneda(d2)} ÷ {fmt_moneda(d5)})</div>
 </div>
 <div class="kpi-card kpi-card-purple">
 <div class="kpi-label">Ratio de Ganancia</div>
 <div class="kpi-value">{fmt_porcentaje(ratio_ganancia_calc)}</div>
+<div class="kpi-formula">(Total Interés ÷ Total Ganado)<br>({fmt_moneda(d2)} ÷ {fmt_moneda(d6)})</div>
+</div>
+<div class="kpi-card kpi-card-green">
+<div class="kpi-label">Interés sobre Interés</div>
+<div class="kpi-value">{fmt_moneda(interes_compuesto_calc)}</div>
+<div class="kpi-formula">(Ganancia por Interés Compuesto acumulado)</div>
+</div>
+<div class="kpi-card kpi-card-blue">
+<div class="kpi-label">Retorno por cada $100 (ROI)</div>
+<div class="kpi-value">{retorno_100_val}</div>
+<div class="kpi-formula">Ganado por cada $100 de tu bolsillo</div>
+</div>
+<div class="kpi-card kpi-card-purple">
+<div class="kpi-label">Ganancia por $100 del Fondo (Ratio)</div>
+<div class="kpi-value">{ratio_100_val}</div>
+<div class="kpi-formula">Ganancia limpia por cada $100 rescatados</div>
+</div>
+<div class="kpi-card kpi-card-yellow">
+<div class="kpi-label">Productividad por $1.000</div>
+<div class="kpi-value">{fmt_moneda(prod_diaria_1000)} / día</div>
+<div class="kpi-formula">(Interés Diario por cada $1.000 guardados)</div>
 </div>
 <div class="kpi-card kpi-card-blue">
 <div class="kpi-label">Saldo Fin Mes Prom. Pond.</div>
