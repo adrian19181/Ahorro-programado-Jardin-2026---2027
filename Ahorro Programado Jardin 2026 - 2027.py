@@ -1,11 +1,16 @@
 import sys
 import io
+import datetime
 import requests
 import openpyxl
 import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
 # ==============================================================================
 # AUTORUNNER: FUNCIONA TANTO LOCALMENTE COMO EN STREAMLIT CLOUD
@@ -71,14 +76,151 @@ def fmt_porcentaje(val):
         return str(val)
 
 # ==============================================================================
+# FUNCIÓN GENERADORA DE PDF CACHEADA (OPTIMIZA VELOCIDAD DE CARGA)
+# ==============================================================================
+@st.cache_data(ttl=600)
+def generar_pdf_reporte_cached(datos_condiciones, datos_kpi_res, datos_kpi_rend, movimientos_lista, evolucion_mensual):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=30
+    )
+    story = []
+    styles = getSampleStyleSheet()
+
+    style_title = ParagraphStyle('DocTitle', parent=styles['Heading1'], fontSize=16, leading=18, textColor=colors.HexColor('#1F2937'), spaceAfter=4)
+    style_sub = ParagraphStyle('DocSub', parent=styles['Normal'], fontSize=9, leading=11, textColor=colors.HexColor('#4B5563'), spaceAfter=10)
+    style_h2 = ParagraphStyle('DocH2', parent=styles['Heading2'], fontSize=11, leading=13, textColor=colors.HexColor('#1E3A8A'), spaceBefore=8, spaceAfter=4)
+    style_cell = ParagraphStyle('DocCell', parent=styles['Normal'], fontSize=7.5, leading=9, textColor=colors.HexColor('#000000'))
+    style_cell_bold = ParagraphStyle('DocCellBold', parent=style_cell, fontName='Helvetica-Bold')
+    style_cell_header = ParagraphStyle('DocCellHeader', parent=style_cell, fontName='Helvetica-Bold', textColor=colors.white, alignment=1)
+
+    fecha_hoy = datetime.date.today().strftime('%d/%m/%Y')
+    story.append(Paragraph("💰 Ahorro Programado Jardín 2026-2027", style_title))
+    story.append(Paragraph(f"Reporte Consolidado de Datos y Rendimientos | Fecha de exportación: {fecha_hoy}", style_sub))
+
+    # 1. CONDICIONES
+    story.append(Paragraph("📋 1. Condiciones del Ahorro Programado", style_h2))
+    t_cond_data = [[Paragraph("Concepto", style_cell_header), Paragraph("Valor", style_cell_header)]]
+    for k, v in datos_condiciones:
+        t_cond_data.append([Paragraph(str(k), style_cell_bold), Paragraph(str(v), style_cell)])
+    t_cond = Table(t_cond_data, colWidths=[220, 332])
+    t_cond.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F2937')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#000000')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t_cond)
+    story.append(Spacer(1, 8))
+
+    # 2. KPI RESULTADOS
+    story.append(Paragraph("📊 2. KPI Resultados", style_h2))
+    t_res_data = [[Paragraph("Indicador", style_cell_header), Paragraph("Valor", style_cell_header)]]
+    for k, v in datos_kpi_res:
+        t_res_data.append([Paragraph(str(k), style_cell_bold), Paragraph(str(v), style_cell)])
+    t_res = Table(t_res_data, colWidths=[220, 332])
+    t_res.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F2937')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#000000')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t_res)
+    story.append(Spacer(1, 8))
+
+    # 3. KPI RENDIMIENTOS
+    story.append(Paragraph("📈 3. KPI Rendimientos", style_h2))
+    t_rend_data = [[Paragraph("Indicador / Métrica", style_cell_header), Paragraph("Valor", style_cell_header)]]
+    for k, v in datos_kpi_rend:
+        t_rend_data.append([Paragraph(str(k), style_cell_bold), Paragraph(str(v), style_cell)])
+    t_rend = Table(t_rend_data, colWidths=[220, 332])
+    t_rend.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F2937')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#000000')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t_rend)
+    story.append(Spacer(1, 8))
+
+    # 4. EVOLUCIÓN MENSUAL (DATOS DE GRÁFICOS)
+    story.append(Paragraph("📉 4. Evolución Mensual de Saldos e Intereses", style_h2))
+    t_ev_data = [[
+        Paragraph("Fecha", style_cell_header),
+        Paragraph("Saldo Fin Mes", style_cell_header),
+        Paragraph("Interés Mensual", style_cell_header),
+        Paragraph("Int. Diario Prom.", style_cell_header),
+        Paragraph("Int. Acumulado", style_cell_header)
+    ]]
+    for item in evolucion_mensual:
+        t_ev_data.append([
+            Paragraph(item["fecha"], style_cell),
+            Paragraph(item["saldo"], style_cell),
+            Paragraph(item["int_mensual"], style_cell),
+            Paragraph(item["int_diario_prom"], style_cell),
+            Paragraph(item["int_acumulado"], style_cell)
+        ])
+    t_ev = Table(t_ev_data, colWidths=[80, 115, 115, 120, 122])
+    t_ev.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F2937')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#000000')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+    ]))
+    story.append(t_ev)
+    story.append(Spacer(1, 8))
+
+    # 5. TABLA RESUMEN DE MOVIMIENTOS
+    story.append(Paragraph("📑 5. Tabla Resumen de Movimientos", style_h2))
+    t_mov_data = [[
+        Paragraph("Fecha", style_cell_header),
+        Paragraph("Dep. Mensual", style_cell_header),
+        Paragraph("Dep. Personales", style_cell_header),
+        Paragraph("Saldo Acumulado", style_cell_header),
+        Paragraph("Int. Diario", style_cell_header),
+        Paragraph("Int. Mensual", style_cell_header)
+    ]]
+    for m in movimientos_lista:
+        t_mov_data.append([
+            Paragraph(m["dt_str"], style_cell_bold),
+            Paragraph(m["dep_m_str"], style_cell),
+            Paragraph(m["dep_p_str"], style_cell),
+            Paragraph(m["saldo_str"], style_cell),
+            Paragraph(m["int_d_str"], style_cell),
+            Paragraph(m["int_m_str"], style_cell_bold if m["int_m_str"] else style_cell)
+        ])
+    t_mov = Table(t_mov_data, colWidths=[70, 95, 95, 105, 95, 92])
+    t_mov.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F2937')),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#000000')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+    ]))
+    story.append(t_mov)
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# ==============================================================================
 # ENCABEZADO PRINCIPAL Y RECARGA
 # ==============================================================================
-col_title, col_btn = st.columns([4, 1])
+col_title, col_btn1, col_btn2 = st.columns([3, 1, 1])
 with col_title:
     st.title("💰 Ahorro Programado Jardín 2026-2027")
     st.caption("Sincronizado en tiempo real desde Google Drive")
 
-with col_btn:
+with col_btn1:
     if st.button("🔄 Recargar", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
@@ -253,7 +395,6 @@ if wb is not None:
     ratio_ganancia_calc = (d2_num / d6_num) if d6_num > 0 else 0.0
 
     # CÁLCULO DE KPIS ADICIONALES
-    # 1. Interés sobre Interés (Ganancia por Interés Compuesto)
     chart_intereses_kpi = []
     r_kpi = 2
     while True:
@@ -271,15 +412,11 @@ if wb is not None:
         interes_compuesto_calc += cum_int_temp * tna_mensual
         cum_int_temp += int_m_val
 
-    # 2. Retorno por cada $100 (ROI)
     d7_num = float(d7) if isinstance(d7, (int, float)) else (d2_num / d5_num if d5_num > 0 else 0.0)
     d7_pct = d7_num * 100.0 if d7_num <= 1.0 else d7_num
     retorno_100_val = f"${d7_pct:.2f}".replace(".", ",")
-
-    # 3. Ganancia por $100 del Fondo (Ratio)
     ratio_100_val = f"${ratio_ganancia_calc * 100.0:.2f}".replace(".", ",")
 
-    # 4. Productividad por cada $1.000 Depositados
     b19_num = float(b19) if isinstance(b19, (int, float)) else 0.0
     d16_num = float(d16) if isinstance(d16, (int, float)) else 0.0
     prod_diaria_1000 = (b19_num / (d16_num / 1000.0)) if d16_num > 0 else (tna_dec / 360.0) * 1000.0
@@ -531,7 +668,6 @@ if wb is not None:
     tabla_movs_body = "".join(rows_html)
 
     html_movs_completo = f"""<style>
-/* Contenedor principal con scroll */
 .tbl-scroll-wrapper {{
     max-height: 480px;
     width: 100%;
@@ -544,27 +680,21 @@ if wb is not None:
     margin-top: 10px;
     margin-bottom: 25px;
     display: block;
-    position: relative; /* Contiene el contexto sticky */
+    position: relative;
 }}
-
-/* Configuracion estricta de la tabla */
 .tbl-sticky-movs {{
     width: 100%;
-    border-collapse: separate !important; /* Vital para sticky */
+    border-collapse: separate !important;
     border-spacing: 0 !important;
     font-family: Calibri, 'Segoe UI', Arial, sans-serif;
     font-size: 12px;
     color: #000000;
     margin: 0;
 }}
-
-/* ---------------------------------------------------
-   ENCABEZADOS (TH)
---------------------------------------------------- */
 .tbl-sticky-movs th {{
     position: sticky !important;
-    top: 0 !important; /* Pegajoso verticalmente */
-    z-index: 20 !important; /* Capa superior a los datos */
+    top: 0 !important;
+    z-index: 20 !important;
     background-color: #1F2937 !important;
     color: #ffffff !important;
     border-right: 1px solid #000000 !important;
@@ -576,24 +706,17 @@ if wb is not None:
     white-space: nowrap !important;
     min-width: 90px;
 }}
-
-/* La esquina superior izquierda debe estar por encima de todo */
 .tbl-sticky-movs th:first-child {{
     position: sticky !important;
     top: 0 !important;
     left: 0 !important;
-    z-index: 50 !important; /* Capa más alta */
+    z-index: 50 !important;
     width: 125px !important;
     min-width: 125px !important;
     max-width: 125px !important;
     box-shadow: 2px 0 5px rgba(0,0,0,0.2) !important;
 }}
-
-/* ---------------------------------------------------
-   CELDAS DE DATOS NORMALES (TD)
---------------------------------------------------- */
 .tbl-sticky-movs td {{
-    /* ¡NO usar relative ni z-index aqui! */
     border-right: 1px solid #000000 !important;
     border-bottom: 1px solid #000000 !important;
     padding: 6px 8px !important;
@@ -602,14 +725,10 @@ if wb is not None:
     white-space: nowrap !important;
     min-width: 90px;
 }}
-
-/* ---------------------------------------------------
-   COLUMNA 1 (FECHAS) - FIJA A LA IZQUIERDA
---------------------------------------------------- */
 .lbl-sticky-col {{
     position: sticky !important;
-    left: 0 !important; /* Pegajoso horizontalmente */
-    z-index: 30 !important; /* Flota sobre las celdas de datos normales, por debajo del header */
+    left: 0 !important;
+    z-index: 30 !important;
     font-weight: bold !important;
     width: 125px !important;
     min-width: 125px !important;
@@ -617,11 +736,6 @@ if wb is not None:
     box-shadow: 3px 0 6px rgba(0,0,0,0.3) !important;
     background-clip: padding-box !important;
 }}
-
-/* ---------------------------------------------------
-   CLASES DE COLORES (Aplicadas al TR)
-   Forzamos el color de fondo para TD normales y el sticky
---------------------------------------------------- */
 .row-blue td {{ background-color: #B4C6E7 !important; }}
 .row-blue .lbl-sticky-col {{ background-color: #B4C6E7 !important; }}
 
@@ -633,7 +747,6 @@ if wb is not None:
 
 .row-white td {{ background-color: #FFFFFF !important; }}
 .row-white .lbl-sticky-col {{ background-color: #FFFFFF !important; }}
-
 </style>
 <div class="tbl-scroll-wrapper">
 <table class="tbl-sticky-movs">
@@ -663,16 +776,15 @@ if wb is not None:
     # ==============================================================================
     st.subheader("📊 Evolución de Saldo e Intereses Mensuales")
 
-    # 4.1 LECTURA DE RESUMEN MENSUAL (AC:AG)
     chart_dates = []
     chart_saldos = []
     chart_intereses = []
 
-    r_chart = 2 # Fila inicio en tabla resumen mensual (AC2:AG14)
+    r_chart = 2
     while True:
-        f_cobro = sheet.cell(row=r_chart, column=29).value # Col AC (Fecha Cobro Intereses)
-        saldo_fin = sheet.cell(row=r_chart, column=30).value # Col AD (Saldo Fin mes)
-        int_mes = sheet.cell(row=r_chart, column=33).value # Col AG (Interés Mensual)
+        f_cobro = sheet.cell(row=r_chart, column=29).value
+        saldo_fin = sheet.cell(row=r_chart, column=30).value
+        int_mes = sheet.cell(row=r_chart, column=33).value
 
         if f_cobro is None or str(f_cobro).strip() == "":
             break
@@ -686,13 +798,10 @@ if wb is not None:
         chart_intereses.append(int_mes_val)
         r_chart += 1
 
-    # 4.2 CÁLCULO DE INTERÉS DIARIO PROMEDIO POR MES (COL A Y R CON FALLBACK)
     daily_int_by_month = {}
-    
-    # Intento 1: Leer directamente desde Columna A (1) y Columna R (18)
     for r_d in range(2, sheet.max_row + 1):
-        f_val = sheet.cell(row=r_d, column=1).value  # Col A (Fechas)
-        r_val = sheet.cell(row=r_d, column=18).value # Col R (Interés Diario)
+        f_val = sheet.cell(row=r_d, column=1).value
+        r_val = sheet.cell(row=r_d, column=18).value
 
         if f_val is None or str(f_val).strip() == "":
             continue
@@ -717,7 +826,6 @@ if wb is not None:
                 daily_int_by_month[m_key] = []
             daily_int_by_month[m_key].append(num_val)
 
-    # Intento 2 (Fallback): Si las fórmulas en Col A/R no tienen valor en caché, usas movimientos
     if not daily_int_by_month and movements:
         for m in movements:
             f_val = m['fecha']
@@ -737,6 +845,86 @@ if wb is not None:
         avg_val = sum(vals) / len(vals) if vals else 0.0
         avg_daily_dates.append(start_month_str)
         avg_daily_vals.append(avg_val)
+
+    cum_int_list = np.cumsum(chart_intereses).tolist() if chart_intereses else []
+
+    # ==============================================================================
+    # EXPORTACIÓN PDF OPTIMIZADA CON CACHÉ
+    # ==============================================================================
+    datos_pdf_condiciones = (
+        ("Tasa Nominal Anual", f"{tna_val:.2f}%"),
+        ("Tasa Diaria", val_diaria_str),
+        ("Fecha Inicio", fecha_ini_str),
+        ("Plazo Meses", str(plazo_meses)),
+        ("Fecha Fin", fecha_fin_str),
+        ("Total de Días", str(total_dias)),
+        ("Valor Aporte Mensual", f"${val_aporte_str}"),
+        ("Día de Aporte Mensual", str(dia_aporte)),
+        ("Meses y Días Reales", f"{meses_real} Meses, {dias_real} Días")
+    )
+
+    datos_pdf_kpi_res = (
+        ("Total Interés Ganados", fmt_moneda(d2)),
+        ("Total Depósitos Mensuales", fmt_moneda(d3)),
+        ("Total Depósitos Personales", fmt_moneda(d4)),
+        ("Total Depositado (sin Int.)", fmt_moneda(d5)),
+        ("Total Ganado Incluido Intereses", fmt_moneda(d6))
+    )
+
+    datos_pdf_kpi_rend = (
+        ("TIR (Tasa Int. Retorno)", fmt_porcentaje(b7)),
+        ("TEA (Tasa Efe. Anual)", fmt_porcentaje(tea_calc)),
+        ("ROI Rentabilidad Acumulada", fmt_porcentaje(d7)),
+        ("Ratio de Ganancia", fmt_porcentaje(ratio_ganancia_calc)),
+        ("Interés sobre Interés", fmt_moneda(interes_compuesto_calc)),
+        ("Retorno por cada $100 (ROI)", retorno_100_val),
+        ("Ganancia por $100 del Fondo (Ratio)", ratio_100_val),
+        ("Productividad por $1.000", f"{fmt_moneda(prod_diaria_1000)} / día"),
+        ("Saldo Fin Mes Prom. Pond.", fmt_moneda(d16)),
+        ("Aportes Personales Prom.", fmt_moneda(d19)),
+        ("Interés Diario Promedio", fmt_moneda(b19))
+    )
+
+    evolucion_mensual_pdf = tuple(
+        {
+            "fecha": chart_dates[idx],
+            "saldo": fmt_moneda(chart_saldos[idx] if idx < len(chart_saldos) else 0.0),
+            "int_mensual": fmt_moneda(chart_intereses[idx] if idx < len(chart_intereses) else 0.0),
+            "int_diario_prom": fmt_moneda(avg_daily_vals[idx] if idx < len(avg_daily_vals) else 0.0),
+            "int_acumulado": fmt_moneda(cum_int_list[idx] if idx < len(cum_int_list) else 0.0)
+        }
+        for idx in range(len(chart_dates))
+    )
+
+    movimientos_pdf_lista = tuple(
+        {
+            "dt_str": m['fecha'].strftime('%d/%m/%Y') if hasattr(m['fecha'], 'strftime') else str(m['fecha']),
+            "dep_m_str": fmt_moneda(m['dep_m']) if m['dep_m'] > 0 else "$0,00",
+            "dep_p_str": fmt_moneda(m['dep_p']) if m['dep_p'] > 0 else "$0,00",
+            "saldo_str": fmt_moneda(m['saldo_acum']),
+            "int_d_str": f"${m['int_diario']:.2f}".replace(".", ","),
+            "int_m_str": fmt_moneda(m['int_m']) if m['int_m'] is not None else ""
+        }
+        for m in movements
+    )
+
+    pdf_bytes = generar_pdf_reporte_cached(
+        datos_pdf_condiciones,
+        datos_pdf_kpi_res,
+        datos_pdf_kpi_rend,
+        movimientos_pdf_lista,
+        evolucion_mensual_pdf
+    )
+
+    with col_btn2:
+        nombre_pdf = f"Ahorro_Programado_Jardin_2026-2027_{datetime.date.today().strftime('%d-%m-%Y')}.pdf"
+        st.download_button(
+            label="📄 PDF",
+            data=pdf_bytes,
+            file_name=nombre_pdf,
+            mime="application/pdf",
+            use_container_width=True
+        )
 
     # 4.3 CREACIÓN DE PESTAÑAS Y GRÁFICOS
     tab_int, tab_saldo, tab_avg, tab_cum = st.tabs([
@@ -867,7 +1055,7 @@ if wb is not None:
                 x=cum_int,
                 y=chart_dates,
                 orientation='h',
-                marker_color='#10B981', # Verde Esmeralda
+                marker_color='#10B981',
                 text=labels_cum,
                 textposition=pos_cum,
                 textfont=dict(size=11),
