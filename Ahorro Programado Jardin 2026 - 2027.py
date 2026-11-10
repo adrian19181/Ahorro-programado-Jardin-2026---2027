@@ -917,7 +917,7 @@ if wb is not None:
     )
 
     with col_btn2:
-        nombre_pdf = f"Ahorro_Programado_Jardin_2026-2027_{datetime.date.today().strftime('%d-%m-%Y')}.pdf"
+        nombre_pdf = "Prgramado 26-27.pdf"
         st.download_button(
             label="📄 PDF",
             data=pdf_bytes,
